@@ -46,7 +46,7 @@ The script will:
 
 - `main.py`: Main ETL script.
 - `notebook.ipynb`: Jupyter notebook version of the ETL process.
-- `README.md`: This file.
+- `README.md`: Detailed description of Project Structure
 
 ## Data Source
 
