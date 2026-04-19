@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import time
+from io import BytesIO
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from a .env file
@@ -20,21 +21,23 @@ def extract():
         try:            
             response = requests.get(i)
             response.raise_for_status()  # Check if the request was successful
+
+            if response.status_code == 200:
+                filename = i.split('/')[-1]
+            # with open(f"./files/{filename}", "wb") as file:
+            #     file.write(response.content)
+            # print(f"{filename} downloaded successfully.")
+            
+                if "yellow" in filename:
+                    yellow_df = pd.read_parquet(BytesIO(response.content))
+                    print(f"{filename} loaded into DataFrame successfully.")
+                elif "green" in filename:
+                    green_df = pd.read_parquet(BytesIO(response.content))
+                    print(f"{filename} loaded into DataFrame successfully.")
+
         except requests.RequestException as e:
             print(f"Error downloading {i}: {e}")
             continue
-
-        if response.status_code == 200:
-            
-            filename = i.split('/')[-1]
-            with open(filename, "wb") as file:
-                file.write(response.content)
-            print(f"{filename} downloaded successfully.")
-            
-            if "yellow" in filename:
-                yellow_df = pd.read_parquet(filename)
-            elif "green" in filename:
-                green_df = pd.read_parquet(filename)
-
+        
         time.sleep(1)  # Adding a delay to avoid overwhelming the machine with requests
     return yellow_df, green_df
