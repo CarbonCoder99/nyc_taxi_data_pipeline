@@ -16,7 +16,14 @@ def extract():
 
 
     for i in url_list:
-        response = requests.get(i)
+        # catch any errors that occur during the download process and print an error message
+        try:            
+            response = requests.get(i)
+            response.raise_for_status()  # Check if the request was successful
+        except requests.RequestException as e:
+            print(f"Error downloading {i}: {e}")
+            continue
+
         if response.status_code == 200:
             
             filename = i.split('/')[-1]
