@@ -6,7 +6,8 @@ load_dotenv()  # Load environment variables from a .env file
 
 # LOAD LOGIC
 def load(yellow_df, green_df):
-    # Load each parquet file into a postgres database using SQLAlchemy and psycopg2
+    # Load each parquet file into a postgres database
+
     DB_URL = os.getenv("DB_URL")  # Get the database URL from environment variables
     if DB_URL:
         print("✅ Found Database URL, attempting to connect...")
@@ -19,7 +20,7 @@ def load(yellow_df, green_df):
             # create tables and load data into the database
             with engine.connect() as conn:
                 conn.execute(text("""
-                             CREATE TABLE IF NOT EXISTS yellow_tripdata_2021_2026(
+                             CREATE TABLE IF NOT EXISTS yellow_tripdata_2021_2025(
                                 tpep_pickup_datetime TIMESTAMP,
                                 tpep_dropoff_datetime TIMESTAMP,
                                 PULocationID INTEGER,
@@ -36,7 +37,7 @@ def load(yellow_df, green_df):
                              """))
                 
                 conn.execute(text("""
-                             CREATE TABLE IF NOT EXISTS green_tripdata_2021_2026(
+                             CREATE TABLE IF NOT EXISTS green_tripdata_2021_2025(
                                 lpep_pickup_datetime TIMESTAMP,
                                 lpep_dropoff_datetime TIMESTAMP,
                                 PULocationID INTEGER,
@@ -52,8 +53,8 @@ def load(yellow_df, green_df):
                              
                              """))
 
-            yellow_df.to_sql('yellow_tripdata_2021_2026', engine, if_exists='replace', index=False)
-            green_df.to_sql('green_tripdata_2021_2026', engine, if_exists='replace', index=False)
+            yellow_df.to_sql('yellow_tripdata_2021_2025', engine, if_exists='replace', index=False)
+            green_df.to_sql('green_tripdata_2021_2025', engine, if_exists='replace', index=False)
 
             print("🚀 DATABASE SUCCESS: Data pushed to PostgreSQL!")
         except Exception as e:

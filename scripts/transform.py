@@ -26,8 +26,12 @@ def transform(yellow_df, green_df):
     # extract pick-up hour and pick up day of week from the pickup datetime column for both yellow and green taxi data
     yellow_df["pickup_hour"] = yellow_df["tpep_pickup_datetime"].dt.hour
     yellow_df["pickup_day_of_week"] = yellow_df["tpep_pickup_datetime"].dt.day_of_week
+    yellow_df["month"] = yellow_df["tpep_pickup_datetime"].dt.month
+    yellow_df["year"] = yellow_df["tpep_pickup_datetime"].dt.year
 
     green_df["pickup_hour"] = green_df["lpep_pickup_datetime"].dt.hour
     green_df["pickup_day_of_week"] = green_df["lpep_pickup_datetime"].dt.day_of_week
-
+    green_df["month"] = green_df["lpep_pickup_datetime"].dt.month
+    green_df["year"] = green_df["lpep_pickup_datetime"].dt.year
+    
     return yellow_df, green_df

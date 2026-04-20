@@ -9,9 +9,9 @@ load_dotenv()
 # EXTRACT LOGIC
 def extract(years=None, months=None):
     if years is None:
-        years = ["2021", "2022"] # "2023", "2024", "2025", "2026"]
+        years = ["2021", "2022", "2023", "2024", "2025"]
     if months is None:
-        months = ["01", "02"] # "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+        months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
     
     yellow_dfs = []
     green_dfs = []
@@ -37,7 +37,7 @@ def extract(years=None, months=None):
                         print(f"{filename} loaded successfully.")
                         
                 except requests.RequestException as e:
-                    print(f"Error downloading {url}: {e}")
+                    print(f"Connection Error: Error pulling data from {url}")
                     continue
                 
                 time.sleep(1)  # Delay to avoid overwhelming the server
