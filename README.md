@@ -50,7 +50,7 @@ A lightweight ETL pipeline for NYC Yellow and Green Taxi trip data. This project
 
 This section covers installing PostgreSQL on Windows and configuring a database for the ETL pipeline.
 
-### Option 1: Install PostgreSQL on Windows
+### Install PostgreSQL on Windows
 
 1. Download PostgreSQL:
    - Visit: https://www.postgresql.org/download/windows/
@@ -83,20 +83,6 @@ This section covers installing PostgreSQL on Windows and configuring a database 
    ```bash
    psql -h localhost -p 5432 -U taxi_user -d nyc_taxi
    ```
-
-### Option 2: Use PostgreSQL with Docker
-
-If you prefer Docker instead of native installation, run:
-
-```bash
-docker run --name nyc-taxi-postgres -e POSTGRES_USER=taxi_user -e POSTGRES_PASSWORD=StrongPassword123 -e POSTGRES_DB=nyc_taxi -p 5432:5432 -d postgres:latest
-```
-
-Then verify:
-
-```bash
-docker ps
-```
 
 ### Configure the project connection
 
@@ -142,7 +128,7 @@ Each table includes:
 
 - If `python main.py` fails with a database error, verify `DB_URL` and confirm PostgreSQL is reachable.
 - If Parquet load fails, ensure `pyarrow` is installed.
-- If the ETL does not find data, confirm your internet connection and that the NYC TLC URL is reachable.
+- If the ETL does not find data, confirm your internet connection and that the NYC TLC url is reachable.
 
 ## Data source
 
@@ -155,4 +141,4 @@ Example files:
 
 ## License
 
-This repository is intended for educational and data engineering practice. Use the NYC TLC data according to the official terms of service.
+This project is intended for educational and data engineering practice. Use the NYC TLC data according to the official terms of service.
