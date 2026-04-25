@@ -1,124 +1,82 @@
-import logging
 import os
-import time
+import hashlib
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-load_dotenv()
-logger = logging.getLogger(__name__)
+load_dotenv()  # Load environment variables from a .env file
 
-YELLOW_TABLE = "yellow_tripdata"
-GREEN_TABLE = "green_tripdata"
-
-TABLE_SCHEMAS = {
-    YELLOW_TABLE: """
-        CREATE TABLE IF NOT EXISTS yellow_tripdata(
-            trip_id VARCHAR(17) PRIMARY KEY,
-            tpep_pickup_datetime TIMESTAMP,
-            tpep_dropoff_datetime TIMESTAMP,
-            PULocationID INTEGER,
-            DOLocationID INTEGER,
-            trip_distance FLOAT,
-            fare_amount FLOAT,
-            passenger_count INTEGER,
-            RatecodeID INTEGER,
-            trip_duration FLOAT,
-            pickup_hour INTEGER,
-            pickup_day_of_week INTEGER,
-            month INTEGER,
-            year INTEGER
-        )
-    """,
-    GREEN_TABLE: """
-        CREATE TABLE IF NOT EXISTS green_tripdata(
-            trip_id VARCHAR(17) PRIMARY KEY,
-            lpep_pickup_datetime TIMESTAMP,
-            lpep_dropoff_datetime TIMESTAMP,
-            PULocationID INTEGER,
-            DOLocationID INTEGER,
-            trip_distance FLOAT,
-            fare_amount FLOAT,
-            passenger_count INTEGER,
-            RatecodeID INTEGER,
-            trip_duration FLOAT,
-            pickup_hour INTEGER,
-            pickup_day_of_week INTEGER,
-            month INTEGER,
-            year INTEGER
-        )
-    """,
-}
-
-
-def get_db_url():
-    db_url = os.getenv("DB_URL")
-    if not db_url:
-        raise ValueError("DB_URL is not set. Set a DB_URL environment variable before running the pipeline.")
-    return db_url
-
-
-def get_db_engine(db_url, retries=3, delay=2):
-    engine = create_engine(db_url, pool_pre_ping=True)
-    last_exception = None
-    for attempt in range(1, retries + 1):
-        try:
-            with engine.connect() as conn:
-                logger.info("Database connection successful on attempt %s", attempt)
-            return engine
-        except Exception as exc:
-            last_exception = exc
-            logger.warning("Database connection failed on attempt %s: %s", attempt, exc)
-            time.sleep(delay * attempt)
-
-    raise ConnectionError(f"Unable to connect to database after {retries} attempts") from last_exception
-
-
-def _create_table(conn, table_name):
-    conn.execute(text(TABLE_SCHEMAS[table_name]))
-    logger.info("Ensured table exists: %s", table_name)
-
-
-def _load_dataframe(engine, df, table_name):
-    if df.empty:
-        logger.info("Skipping empty dataframe for %s", table_name)
-        return
-
-    df = df.drop_duplicates(subset=["trip_id"]).copy()
-    staging_table = f"{table_name}_staging"
-
-    with engine.begin() as conn:
-        _create_table(conn, table_name)
-
-        df.to_sql(staging_table, con=conn, if_exists="replace", index=False, method="multi")
-        logger.info("Wrote %s rows to staging table %s", len(df), staging_table)
-
-        insert_sql = text(
-            f"INSERT INTO {table_name} SELECT * FROM {staging_table} "
-            f"ON CONFLICT (trip_id) DO NOTHING"
-        )
-        result = conn.execute(insert_sql)
-        logger.info(
-            "Merged staging data into %s, rows affected=%s",
-            table_name,
-            result.rowcount,
-        )
-
-        conn.execute(text(f"DROP TABLE IF EXISTS {staging_table}"))
-        logger.info("Dropped staging table %s", staging_table)
-
-
+# LOAD LOGIC
 def load(yellow_df, green_df):
-    db_url = get_db_url()
-    engine = get_db_engine(db_url)
+    # Load each parquet file into a postgres database
 
-    if not yellow_df.empty:
-        _load_dataframe(engine, yellow_df, YELLOW_TABLE)
-    else:
-        logger.info("No yellow data to load")
+    DB_URL = os.getenv("DB_URL")  # Get the database URL from environment variables
 
-    if not green_df.empty:
-        _load_dataframe(engine, green_df, GREEN_TABLE)
-    else:
-        logger.info("No green data to load")
+    if DB_URL:
+        print("✅ Found Database URL, attempting to connect...")
+        try:
+            engine = create_engine(DB_URL)
 
-    logger.info("Database load completed")
+            # Test database connection, create tables, and load data into the database
+            with engine.connect() as conn:
+                print("🔗 Database connection successful!")
+
+                conn.execute(text("""
+                             CREATE TABLE IF NOT EXISTS yellow_tripdata_2021_2025(
+                                trip_id VARCHAR(17) PRIMARY KEY,
+                                tpep_pickup_datetime TIMESTAMP,
+                                tpep_dropoff_datetime TIMESTAMP,
+                                PULocationID INTEGER,
+                                DOLocationID INTEGER,
+                                trip_distance FLOAT,
+                                fare_amount FLOAT,
+                                passenger_count INTEGER,
+                                RatecodeID INTEGER,
+                                trip_duration FLOAT,
+                                pickup_hour INTEGER,
+                                pickup_day_of_week INTEGER
+                             )
+                             
+                             """))
+                
+                conn.execute(text("""
+                             CREATE TABLE IF NOT EXISTS green_tripdata_2021_2025(
+                                trip_id VARCHAR(17) PRIMARY KEY,
+                                lpep_pickup_datetime TIMESTAMP,
+                                lpep_dropoff_datetime TIMESTAMP,
+                                PULocationID INTEGER,
+                                DOLocationID INTEGER,
+                                trip_distance FLOAT,
+                                fare_amount FLOAT,
+                                passenger_count INTEGER,
+                                RatecodeID INTEGER,
+                                trip_duration FLOAT,
+                                pickup_hour INTEGER,
+                                pickup_day_of_week INTEGER
+                             )
+                             
+                             """))
+
+            # Load data with duplicate handling
+            try:
+                yellow_df.to_sql('yellow_tripdata_2021_2025', engine, if_exists='append', index=False)
+                print("✅ Yellow taxi data loaded successfully!")
+            except Exception as e:
+                if "duplicate key value" in str(e).lower() or "unique constraint" in str(e).lower():
+                    print("⚠️  Some yellow taxi records already exist (duplicates skipped)")
+                else:
+                    print(f"❌ Error loading yellow taxi data: {e}")
+                    raise
+            
+            try:
+                green_df.to_sql('green_tripdata_2021_2025', engine, if_exists='append', index=False)
+                print("✅ Green taxi data loaded successfully!")
+            except Exception as e:
+                if "duplicate key value" in str(e).lower() or "unique constraint" in str(e).lower():
+                    print("⚠️  Some green taxi records already exist (duplicates skipped)")
+                else:
+                    print(f"❌ Error loading green taxi data: {e}")
+                    raise
+
+            print("🚀 DATABASE SUCCESS: Data pushed to PostgreSQL!")
+        except Exception as e:
+            print(f"❌ DATABASE ERROR: {e}")

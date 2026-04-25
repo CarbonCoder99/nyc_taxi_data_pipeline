@@ -1,6 +1,0 @@
-pandas
-requests
-python-dotenv
-sqlalchemy
-pyarrow
-pytest

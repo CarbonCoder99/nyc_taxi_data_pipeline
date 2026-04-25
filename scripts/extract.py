@@ -1,15 +1,12 @@
-import logging
-import pandas as pd
 import requests
+import pandas as pd
 import time
 from io import BytesIO
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 from dotenv import load_dotenv
 
 load_dotenv()
-logger = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 COLOR_REQUIRED_COLUMNS = {
     "yellow": [
         "tpep_pickup_datetime",
@@ -96,28 +93,46 @@ def extract(start_year=2021, end_year=2022, start_month=1, end_month=2, colors=N
 
     logger.info("Starting extraction for years=%s months=%s colors=%s", years, months, colors)
     session = configure_http_session()
+=======
+# EXTRACT LOGIC
+def extract(years=None, months=None):
+    if years is None:
+        years = ["2021", "2022", "2023", "2024", "2025"]
+    if months is None:
+        months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+    
+>>>>>>> parent of 0f6203e (fix: ensuring a production ready pipeline)
     yellow_dfs = []
     green_dfs = []
-
+    
     for year in years:
         for month in months:
-            for color in colors:
-                url = get_url(year, month, color)
-                df = fetch_parquet(session, url)
-                if df is None:
+            yellow_url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year}-{month}.parquet"
+            green_url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_{year}-{month}.parquet"
+            
+            for url in [yellow_url, green_url]:
+                try:
+                    response = requests.get(url)
+                    response.raise_for_status()
+                    
+                    df = pd.read_parquet(BytesIO(response.content))
+                    filename = url.split('/')[-1]
+                    
+                    if "yellow" in filename:
+                        yellow_dfs.append(df)
+                        print(f"{filename} loaded successfully.")
+                    elif "green" in filename:
+                        green_dfs.append(df)
+                        print(f"{filename} loaded successfully.")
+                        
+                except requests.RequestException as e:
+                    print(f"Connection Error: Error pulling data from {url}")
                     continue
-                if color == "yellow":
-                    yellow_dfs.append(df)
-                else:
-                    green_dfs.append(df)
-                time.sleep(1)
-
+                
+                time.sleep(1)  # Delay to avoid overwhelming the server
+    
+    # Concatenate all DataFrames (if any were loaded)
     yellow_df = pd.concat(yellow_dfs, ignore_index=True) if yellow_dfs else pd.DataFrame()
     green_df = pd.concat(green_dfs, ignore_index=True) if green_dfs else pd.DataFrame()
-
-    logger.info(
-        "Extraction completed: yellow_rows=%s green_rows=%s",
-        len(yellow_df),
-        len(green_df),
-    )
+    
     return yellow_df, green_df

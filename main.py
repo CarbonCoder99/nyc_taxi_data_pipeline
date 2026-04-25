@@ -1,53 +1,23 @@
-import argparse
-import logging
-import sys
-
+import requests
+import os
+import time
+import pandas as pd
 from dotenv import load_dotenv
-from scripts.config import configure_logging
+from sqlalchemy import create_engine
 from scripts.extract import extract
-from scripts.load import load
 from scripts.transform import transform
+from scripts.load import load
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Run the NYC Taxi ETL pipeline")
-    parser.add_argument("--start-year", type=int, default=2021, help="First year to extract")
-    parser.add_argument("--end-year", type=int, default=2025, help="Last year to extract")
-    parser.add_argument("--start-month", type=int, default=1, help="First month to extract")
-    parser.add_argument("--end-month", type=int, default=12, help="Last month to extract")
-    parser.add_argument(
-        "--colors",
-        nargs="+",
-        choices=["yellow", "green"],
-        default=["yellow", "green"],
-        help="Taxi colors to include",
-    )
-    return parser.parse_args()
-
+load_dotenv()  # Load environment variables from a .env file
 
 def main():
-    load_dotenv()
-    configure_logging()
-    logger = logging.getLogger(__name__)
-
-    args = parse_args()
-    logger.info("Pipeline started with args=%s", args)
-
     try:
-        yellow_df, green_df = extract(
-            start_year=args.start_year,
-            end_year=args.end_year,
-            start_month=args.start_month,
-            end_month=args.end_month,
-            colors=args.colors,
-        )
+        yellow_df, green_df = extract()
         yellow_df, green_df = transform(yellow_df, green_df)
         load(yellow_df, green_df)
-        logger.info("Pipeline finished successfully")
-    except Exception as exc:
-        logger.exception("Pipeline failed: %s", exc)
-        sys.exit(1)
-
+    except KeyError as e:
+        print(f" Key Error: {e}")
 
 if __name__ == "__main__":
     main()
