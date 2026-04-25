@@ -6,40 +6,41 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def get_url(year, month, color):
+    """Generate the URL for the parquet file."""
+    return f"https://d37ci6vzurychx.cloudfront.net/trip-data/{color}_tripdata_{year}-{month}.parquet"
+
+def fetch_parquet(url):
+    """Fetch and load parquet data from URL into a DataFrame."""
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        df = pd.read_parquet(BytesIO(response.content))
+        filename = url.split('/')[-1]
+        print(f"{filename} loaded successfully.")
+        return df
+    except requests.RequestException as e:
+        print(f"Connection Error: Error pulling data from {url}")
+        return None
+
 # EXTRACT LOGIC
-def extract(years=None, months=None):
-    if years is None:
-        years = ["2021", "2022", "2023", "2024", "2025"]
-    if months is None:
-        months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+def extract(start_year=2021, end_year=2025, start_month=1, end_month=12):
+    years = [str(y) for y in range(start_year, end_year + 1)]
+    months = [f"{m:02d}" for m in range(start_month, end_month + 1)]
     
     yellow_dfs = []
     green_dfs = []
     
     for year in years:
         for month in months:
-            yellow_url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year}-{month}.parquet"
-            green_url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_{year}-{month}.parquet"
-            
-            for url in [yellow_url, green_url]:
-                try:
-                    response = requests.get(url)
-                    response.raise_for_status()
-                    
-                    df = pd.read_parquet(BytesIO(response.content))
-                    filename = url.split('/')[-1]
-                    
-                    if "yellow" in filename:
+            for color in ['yellow', 'green']:
+                url = get_url(year, month, color)
+                df = fetch_parquet(url)
+                if df is not None:
+                    if color == 'yellow':
                         yellow_dfs.append(df)
-                        print(f"{filename} loaded successfully.")
-                    elif "green" in filename:
+                    elif color == 'green':
                         green_dfs.append(df)
-                        print(f"{filename} loaded successfully.")
-                        
-                except requests.RequestException as e:
-                    print(f"Connection Error: Error pulling data from {url}")
-                    continue
-                
                 time.sleep(1)  # Delay to avoid overwhelming the server
     
     # Concatenate all DataFrames (if any were loaded)
