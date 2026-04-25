@@ -85,7 +85,7 @@ def _build_range(start, end, name, min_value, max_value):
     return [f"{value:02d}" for value in range(start, end + 1)] if name == "month" else [str(value) for value in range(start, end + 1)]
 
 
-def extract(start_year=2021, end_year=2025, start_month=1, end_month=12, colors=None):
+def extract(start_year=2021, end_year=2022, start_month=1, end_month=2, colors=None):
     if colors is None:
         colors = ["yellow", "green"]
     if not colors:
