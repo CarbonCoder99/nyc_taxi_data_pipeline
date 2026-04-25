@@ -1,21 +1,26 @@
 # NYC Taxi Data ETL Project
 
-A lightweight ETL pipeline for NYC Yellow and Green Taxi trip data. This project extracts Parquet data from the NYC TLC public source, transforms the datasets, and loads them into PostgreSQL.
+A production-ready ETL pipeline for NYC Yellow and Green Taxi trip data. This project extracts Parquet data from the NYC TLC public source, transforms the datasets, and loads them into PostgreSQL.
 
 ## What this project does
 
 - Extracts Yellow and Green taxi trip data from the NYC TLC public Parquet files.
-- Transforms the raw data by selecting key columns, calculating trip duration, removing duplicates, dropping missing rows, and extracting pickup time features.
-- Loads the cleaned data into PostgreSQL tables `yellow_tripdata_2021_2025` and `green_tripdata_2021_2025`.
+- Uses retries, schema validation, and configurable extraction ranges.
+- Transforms raw data with feature extraction, deduplication, and validation.
+- Loads cleaned records into PostgreSQL using idempotent merge semantics.
+- Supports CLI parameters, logging, and CI-friendly tests.
 
 ## Repo structure
 
 - `main.py`: orchestrates the ETL flow.
-- `scripts/extract.py`: downloads and reads the Parquet datasets.
-- `scripts/transform.py`: selects columns, computes duration, drops duplicates, and adds time features.
-- `scripts/load.py`: connects to PostgreSQL and writes the processed data.
-- `notebook.ipynb`: optional notebook version for exploration and prototyping.
+- `scripts/config.py`: logging and environment configuration.
+- `scripts/extract.py`: downloads and validates Parquet datasets.
+- `scripts/transform.py`: transforms and validates datasets.
+- `scripts/load.py`: loads data into PostgreSQL with staging and duplicate handling.
+- `tests/`: unit tests for extraction, transformation, and load helpers.
 - `README.md`: project documentation.
+- `.env.example`: example environment settings.
+- `requirements.txt`: Python dependencies.
 
 ## Prerequisites
 
@@ -41,94 +46,62 @@ A lightweight ETL pipeline for NYC Yellow and Green Taxi trip data. This project
 
 2. Install required Python packages:
    ```bash
-   pip install requests pandas sqlalchemy python-dotenv pyarrow
+   pip install -r requirements.txt
    ```
 
-   Note: `pyarrow` is required for reading Parquet files with `pandas`.
+## Configuration
 
-## PostgreSQL setup
-
-This section covers installing PostgreSQL on Windows and configuring a database for the ETL pipeline.
-
-### Install PostgreSQL on Windows
-
-1. Download PostgreSQL:
-   - Visit: https://www.postgresql.org/download/windows/
-   - Download the installer from EnterpriseDB.
-
-2. Run the installer and follow these steps:
-   - Select the installation directory.
-   - Choose a data directory.
-   - Set a PostgreSQL superuser password.
-   - Keep the default port `5432` unless you need a different port.
-   - Install pgAdmin if you want a GUI tool.
-
-3. Confirm the PostgreSQL service is running:
-   - Open Services and verify `postgresql-x64-*` is running.
-   - Or use PowerShell:
-     ```powershell
-     Get-Service | Where-Object Name -Like 'postgres*'
-     ```
-
-4. Create a database and user role:
-   - Open `psql` or pgAdmin.
-   - Create a database and user role with SQL:
-     ```sql
-     CREATE DATABASE nyc_taxi;
-     CREATE USER taxi_user WITH PASSWORD 'StrongPassword123';
-     GRANT ALL PRIVILEGES ON DATABASE nyc_taxi TO taxi_user;
-     ```
-
-5. Verify the connection:
-   ```bash
-   psql -h localhost -p 5432 -U taxi_user -d nyc_taxi
-   ```
-
-### Configure the project connection
-
-Create a `.env` file in the project root with the connection string:
+Copy `.env.example` to `.env` and update values for your environment.
 
 ```env
 DB_URL=postgresql://taxi_user:StrongPassword123@localhost:5432/nyc_taxi
+LOG_LEVEL=INFO
 ```
-
-> If PostgreSQL uses a non-default port, update `5432` to the correct port.
 
 ## Run the ETL pipeline
 
 1. Ensure PostgreSQL is running.
 2. Ensure your virtual environment is activated.
-3. Run:
+3. Run the pipeline with default year/month ranges:
 
 ```bash
 python main.py
 ```
 
-The ETL flow will:
-- download Yellow and Green Parquet files for years 2021–2025,
-- transform the records,
-- write the cleaned tables into PostgreSQL.
+4. Use CLI flags to control extraction range:
+
+```bash
+python main.py --start-year 2021 --end-year 2023 --start-month 1 --end-month 6 --colors yellow green
+```
+
+## Testing
+
+Run unit tests with:
+
+```bash
+pytest -q
+```
 
 ## Notes on tables and data
 
 The pipeline writes to the following tables:
 
-- `yellow_tripdata_2021_2025`
-- `green_tripdata_2021_2025`
+- `yellow_tripdata`
+- `green_tripdata`
 
 Each table includes:
 - pickup / dropoff timestamps
 - pickup and dropoff location IDs
 - trip distance, fare amount, passenger count, and rate code
 - computed `trip_duration`
-- extracted `pickup_hour` and `pickup_day_of_week`
-- extracted `month` and `year`
+- extracted `pickup_hour`, `pickup_day_of_week`, `month`, and `year`
+- a stable `trip_id` primary key for idempotent loads
 
 ## Troubleshooting
 
 - If `python main.py` fails with a database error, verify `DB_URL` and confirm PostgreSQL is reachable.
 - If Parquet load fails, ensure `pyarrow` is installed.
-- If the ETL does not find data, confirm your internet connection and that the NYC TLC url is reachable.
+- If the ETL does not find data, confirm your internet connection and that the NYC TLC URL is reachable.
 
 ## Data source
 
