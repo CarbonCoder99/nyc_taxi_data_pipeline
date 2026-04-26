@@ -21,8 +21,8 @@ def generate_trip_hash(row, prefix):
 # TRANSFORM LOGIC
 def transform(yellow_df, green_df):
     # Select only the relevant columns for analysis and database storage
-    yellow_df = yellow_df[['tpep_pickup_datetime', 'tpep_dropoff_datetime', 'PULocationID', 'DOLocationID', 'trip_distance', 'fare_amount', 'passenger_count', 'RatecodeID']]
-    green_df = green_df[['lpep_pickup_datetime', 'lpep_dropoff_datetime', 'PULocationID', 'DOLocationID', 'trip_distance', 'fare_amount', 'passenger_count', 'RatecodeID']] 
+    yellow_df = yellow_df[['tpep_pickup_datetime', 'tpep_dropoff_datetime', 'PULocationID', 'DOLocationID', 'trip_distance', 'fare_amount', 'passenger_count', 'RatecodeID']].copy()
+    green_df = green_df[['lpep_pickup_datetime', 'lpep_dropoff_datetime', 'PULocationID', 'DOLocationID', 'trip_distance', 'fare_amount', 'passenger_count', 'RatecodeID']].copy()
 
 
     # Calculate trip duration in minutes for both yellow and green taxi data and round to 1 decimal place
