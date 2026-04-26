@@ -1,18 +1,18 @@
 # NYC Taxi Data ETL Project
 
-A lightweight ETL pipeline for NYC Yellow and Green Taxi trip data. This project extracts Parquet data from the NYC TLC public source, transforms the datasets, and loads them into PostgreSQL.
+A simple ETL pipeline for NYC Yellow and Green Taxi trip data. This project extracts Parquet data from the NYC TLC public source, transforms the datasets, and loads them into PostgreSQL.
 
 ## What this project does
 
-- Extracts Yellow and Green taxi trip data from the NYC TLC public Parquet files.
+- Extracts Yellow and Green taxi trip data from the NYC TLC public Parquet files using configurable year and month ranges.
 - Transforms the raw data by selecting key columns, calculating trip duration, removing duplicates, dropping missing rows, and extracting pickup time features.
 - Loads the cleaned data into PostgreSQL tables `yellow_tripdata_2021_2025` and `green_tripdata_2021_2025`.
 
 ## Repo structure
 
 - `main.py`: orchestrates the ETL flow.
-- `scripts/extract.py`: downloads and reads the Parquet datasets.
-- `scripts/transform.py`: selects columns, computes duration, drops duplicates, and adds time features.
+- `scripts/extract.py`: contains `get_url()`, `fetch_parquet()`, and `extract()` functions to download and read Parquet datasets.
+- `scripts/transform.py`: transforms the data by selecting columns, computing duration, dropping duplicates, and adding time features.
 - `scripts/load.py`: connects to PostgreSQL and writes the processed data.
 - `notebook.ipynb`: optional notebook version for exploration and prototyping.
 - `README.md`: project documentation.
