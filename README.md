@@ -151,7 +151,7 @@ Each table includes:
 
 - If `python main.py` fails with a database error, verify `DB_URL` in `.env` and confirm the database is reachable.
 - If Parquet load fails, ensure `pyarrow` is installed.
-- If the ETL does not find data, confirm your internet connection and that NYC TLC URLs are reachable.
+- If the ETL does not find data, confirm your internet connection and that NYC TLC URLs are reachable.     
 - For connection timeouts with remote databases (e.g., Supabase), check firewall/network rules.
 
 ## Data source
