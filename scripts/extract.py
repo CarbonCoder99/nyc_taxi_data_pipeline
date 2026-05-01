@@ -24,27 +24,20 @@ def fetch_parquet(url):
         return None
 
 # EXTRACT LOGIC
-def extract(start_year=2021, end_year=2025, start_month=1, end_month=12):
-    years = [str(y) for y in range(start_year, end_year + 1)]
-    months = [f"{m:02d}" for m in range(start_month, end_month + 1)]
+def extract(year, month):
+    month_str = f"{month:02d}"
     
-    yellow_dfs = []
-    green_dfs = []
+    yellow_df = pd.DataFrame()
+    green_df = pd.DataFrame()
     
-    for year in years:
-        for month in months:
-            for color in ['yellow', 'green']:
-                url = get_url(year, month, color)
-                df = fetch_parquet(url)
-                if df is not None:
-                    if color == 'yellow':
-                        yellow_dfs.append(df)
-                    elif color == 'green':
-                        green_dfs.append(df)
-                time.sleep(1)  # Delay to avoid overwhelming the server
-    
-    # Concatenate all DataFrames (if any were loaded)
-    yellow_df = pd.concat(yellow_dfs, ignore_index=True) if yellow_dfs else pd.DataFrame()
-    green_df = pd.concat(green_dfs, ignore_index=True) if green_dfs else pd.DataFrame()
+    for color in ['yellow', 'green']:
+        url = get_url(year, month_str, color)
+        df = fetch_parquet(url)
+        if df is not None:
+            if color == 'yellow':
+                yellow_df = df
+            elif color == 'green':
+                green_df = df
+        time.sleep(1)  # Delay to avoid overwhelming the server
     
     return yellow_df, green_df
