@@ -1,26 +1,27 @@
 # NYC Taxi Data ETL Project
 
-A simple ETL pipeline for NYC Yellow and Green Taxi trip data. This project extracts Parquet data from the NYC TLC public source, transforms the datasets, and loads them into PostgreSQL.
+A sequential ETL pipeline for NYC Yellow and Green Taxi trip data. This project extracts Parquet data from the NYC TLC public source, processes it month-by-month, and loads it into PostgreSQL.
 
 ## What this project does
 
-- Extracts Yellow and Green taxi trip data from the NYC TLC public Parquet files using configurable year and month ranges.
-- Transforms the raw data by selecting key columns, calculating trip duration, removing duplicates, dropping missing rows, and extracting pickup time features.
-- Loads the cleaned data into PostgreSQL tables `yellow_tripdata_2021_2025` and `green_tripdata_2021_2025`.
+- **Extracts** Yellow and Green taxi trip data from NYC TLC public Parquet files one month at a time.
+- **Transforms** raw data by selecting key columns, calculating trip duration, removing duplicates, dropping missing rows, and extracting pickup time features.
+- **Loads** cleaned data into PostgreSQL tables `yellow_tripdata_2021_2025` and `green_tripdata_2021_2025`.
+- **Processes sequentially** by year and month, allowing for granular error handling and progress tracking.
 
 ## Repo structure
 
-- `main.py`: orchestrates the ETL flow.
-- `scripts/extract.py`: contains `get_url()`, `fetch_parquet()`, and `extract()` functions to download and read Parquet datasets.
-- `scripts/transform.py`: transforms the data by selecting columns, computing duration, dropping duplicates, and adding time features.
-- `scripts/load.py`: connects to PostgreSQL and writes the processed data.
-- `notebook.ipynb`: optional notebook version for exploration and prototyping.
-- `README.md`: project documentation.
+- `main.py`: Orchestrates the ETL flow with year/month configuration and error handling.
+- `scripts/extract.py`: Contains `get_url()`, `fetch_parquet()`, and `extract(year, month)` functions to download and read a single month of Parquet data.
+- `scripts/transform.py`: Transforms data by selecting columns, computing duration, dropping duplicates, and adding time features.
+- `scripts/load.py`: Connects to PostgreSQL and writes processed data.
+- `.env`: Environment file for storing the database connection URL.
+- `README.md`: Project documentation.
 
 ## Prerequisites
 
 - Python 3.8 or newer
-- PostgreSQL 12+ (or compatible)
+- PostgreSQL 12+ (or compatible, e.g., Supabase)
 - Internet access to download NYC taxi data
 
 ## Python setup
@@ -86,49 +87,72 @@ This section covers installing PostgreSQL on Windows and configuring a database 
 
 ### Configure the project connection
 
-Create a `.env` file in the project root with the connection string:
+Create a `.env` file in the project root with the connection string. For local PostgreSQL or Supabase:
 
+**Local PostgreSQL:**
 ```env
 DB_URL=postgresql://taxi_user:StrongPassword123@localhost:5432/nyc_taxi
 ```
 
-> If PostgreSQL uses a non-default port, update `5432` to the correct port.
+**Supabase:**
+```env
+DB_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
+```
+
+> If PostgreSQL uses a non-default port, update the port number accordingly.
 
 ## Run the ETL pipeline
 
-1. Ensure PostgreSQL is running.
-2. Ensure your virtual environment is activated.
-3. Run:
+The pipeline processes data month-by-month. Configure the year and month range in `main.py`:
+
+```python
+start_year = 2021
+end_year = 2021
+start_month = 1
+end_month = 12  # Adjust as needed
+```
+
+Then run:
 
 ```bash
 python main.py
 ```
 
-The ETL flow will:
-- download Yellow and Green Parquet files for years 2021–2025,
-- transform the records,
-- write the cleaned tables into PostgreSQL.
+### How it works
+
+For each month in the specified range, the pipeline will:
+1. Extract Yellow and Green taxi data for that month from NYC TLC Parquet files
+2. Transform the records (drop nulls, remove duplicates, compute features)
+3. Load the cleaned data into PostgreSQL
+4. Continue to the next month
+
+This month-by-month approach provides:
+- **Granular error handling**: If one month fails, others can still be processed
+- **Better progress tracking**: See which months have completed
+- **Flexible scheduling**: Process months in smaller batches if needed
 
 ## Notes on tables and data
 
 The pipeline writes to the following tables:
 
-- `yellow_tripdata_2021_2025`
-- `green_tripdata_2021_2025`
+- `yellow_tripdata_2021_2025`: Yellow taxi trip data
+- `green_tripdata_2021_2025`: Green taxi trip data
 
 Each table includes:
-- pickup / dropoff timestamps
-- pickup and dropoff location IDs
-- trip distance, fare amount, passenger count, and rate code
-- computed `trip_duration`
-- extracted `pickup_hour` and `pickup_day_of_week`
-- extracted `month` and `year`
+- `trip_id`: Unique trip identifier (generated from trip details)
+- Pickup/dropoff timestamps (`tpep_pickup_datetime`, `lpep_pickup_datetime`, etc.)
+- Pickup and dropoff location IDs (`pulocationid`, `dolocationid`)
+- `trip_distance`, `fare_amount`, `passenger_count`, `ratecodeid`
+- `trip_duration`: Calculated trip duration in minutes
+- `pickup_hour`, `pickup_day_of_week`: Extracted time features
+- `month`, `year`: Extracted date features
 
 ## Troubleshooting
 
-- If `python main.py` fails with a database error, verify `DB_URL` and confirm PostgreSQL is reachable.
+- If `python main.py` fails with a database error, verify `DB_URL` in `.env` and confirm the database is reachable.
 - If Parquet load fails, ensure `pyarrow` is installed.
-- If the ETL does not find data, confirm your internet connection and that the NYC TLC url is reachable.
+- If the ETL does not find data, confirm your internet connection and that NYC TLC URLs are reachable.
+- For connection timeouts with remote databases (e.g., Supabase), check firewall/network rules.
 
 ## Data source
 

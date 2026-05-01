@@ -13,9 +13,9 @@ load_dotenv()  # Load environment variables from a .env file
 
 def main():
     start_year = 2021
-    end_year = 2021
+    end_year = 2025
     start_month = 1
-    end_month = 1
+    end_month = 12
     
     # Loop through the specified years and months to extract, transform, and load data for each month
     for year in range(start_year, end_year + 1):
