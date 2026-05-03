@@ -39,6 +39,10 @@ def transform(yellow_df, green_df):
     green_df.dropna(inplace=True)
     green_df.drop_duplicates(inplace=True)
 
+    # Convert numeric ID fields to integers so database COPY load does not receive float values like 1.0
+    int_columns = ['PULocationID', 'DOLocationID', 'passenger_count', 'RatecodeID']
+    yellow_df[int_columns] = yellow_df[int_columns].astype(int)
+    green_df[int_columns] = green_df[int_columns].astype(int)
 
     # extract pick-up hour and pick up day of week from the pickup datetime column for both yellow and green taxi data
     yellow_df["pickup_hour"] = yellow_df["tpep_pickup_datetime"].dt.hour

@@ -17,7 +17,7 @@ def fetch_parquet(url):
         response.raise_for_status()
         df = pd.read_parquet(BytesIO(response.content))
         filename = url.split('/')[-1]
-        print(f"{filename} loaded successfully.")
+        print(f"{filename} fetched successfully.")
         return df
     except requests.RequestException as e:
         print(f"Connection Error: Error pulling data from {url}")
